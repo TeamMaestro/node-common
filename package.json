@@ -1,0 +1,36 @@
+{
+    "name": "@teamhive/node-common",
+    "version": "0.0.1",
+    "description": "This repo houses our shared node functions and node handlers",
+    "keywords": [
+        "Typescript"
+    ],
+    "license": "ISC",
+    "author": "TeamHive",
+    "contributors": [
+        "Josh Gibson <gibsonjoshua55>",
+        "Tyler Vander Maas <tvmaasjazz>",
+        "John Pinkster <jpinkster>"
+    ],
+    "homepage": "https://github.com/TeamHive/node-common",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/TeamHive/node-common.git"
+    },
+    "bugs": {
+        "url": "https://github.com/TeamHive/node-common/issues"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "watch": "tsc -w",
+        "start": "tsc",
+        "prepack": "tsc",
+        "postpublish": "git push && git push --tags",
+        "postpack": "rm *.d.ts && rm *.js && rm -rf modules"
+    },
+    "devDependencies": {
+        "@types/node": "^12.6.1",
+        "tslint": "^5.18.0",
+        "typescript": "^3.1.6"
+    }
+}
