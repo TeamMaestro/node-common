@@ -3,7 +3,9 @@ import { EventEmitter } from 'events';
 export class TryCatchEmitter {
     private static emitter = new EventEmitter();
 
-    private constructor() {}
+    static baseErrorClass: any;
+
+    constructor() {}
 
     /**
      * Pass error to be emitted to listeners

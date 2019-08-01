@@ -8,6 +8,8 @@ This decorator will wrap your whole function into a try/catch and you can pass a
 ```typescript
     // Main file, right after bootstrap of application **caught error will be handled here**
     import { TryCatchEmitter } from '@teamhive/node-common';
+    // This will setup any baseExceptions that may get thrown that you dont want to wrap with the wrapping class
+    TryCatchEmitter.baseException = [MyBaseException, HttpException];
     TryCatchEmitter.listen((error) => errorHandler.captureException(error));
 
     // Options interface

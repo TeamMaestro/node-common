@@ -16,7 +16,18 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
 
     // helper function to pass appropriate arguments to exception
     const getException = (error: any, Exception: TryCatchException) => {
-
+        if (TryCatchEmitter.baseErrorClass) {
+            if (Array.isArray(TryCatchEmitter.baseErrorClass)) {
+                for (const baseErrorClass of TryCatchEmitter.baseErrorClass) {
+                    if (error instanceof baseErrorClass) {
+                        return error;
+                    }
+                }
+            }
+            else if (error instanceof TryCatchEmitter.baseErrorClass) {
+                return error;
+            }
+        }
         if (new Exception(error).error) {
             if (options.customResponseMessage) {
                 return new Exception(error, options.customResponseMessage);
