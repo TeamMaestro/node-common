@@ -47,18 +47,20 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
             error = new firstParamOptions.errorWrapperClass(error);
         }
 
+        let scopedException;
+
         // get exception instance if there is an exception passed in
         if (exception) {
-            exception = getException(error, exception);
+            scopedException = getException(error, exception);
         }
 
         // if handler passed in capture the exception, otherwise throw it
         if (handleOnly) {
             // emit for app to subscribe to and handle
-            TryCatchEmitter.emit(exception || error);
+            TryCatchEmitter.emit(scopedException || error);
         }
         else {
-            throw exception || error;
+            throw scopedException || error;
         }
     };
 
