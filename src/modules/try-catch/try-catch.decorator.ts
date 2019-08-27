@@ -2,6 +2,8 @@ import { TryCatchEmitter } from './try-catch-emitter';
 import { TryCatchException } from './try-catch-exception.interface';
 import { TryCatchOptions } from './try-catch-options.interface';
 
+export function TryCatch(exception: TryCatchException, options?: TryCatchOptions): MethodDecorator;
+export function TryCatch(options: TryCatchOptions): MethodDecorator;
 export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchException, options = {} as TryCatchOptions) {
     // set exception based off of type of first param
     let exception: TryCatchException;
@@ -69,8 +71,8 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
         // store original method
         const originalMethod = descriptor.value;
 
-        // check if original methods is async to determine if decorator should be async
-        if (originalMethod.constructor.name === 'AsyncFunction') {
+        // check if original methods is async
+        if (!options.isSynchronous) {
             descriptor.value = async function(...args: any[]) {
                 // try catch the original method passing in args it was called with
                 try {
