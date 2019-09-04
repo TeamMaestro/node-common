@@ -22,8 +22,8 @@ export class NodeEventHandler {
     static handleUncaughtException(errorHandler: ErrorHandler) {
         process.removeListener('uncaughtException', NodeEventHandler.logException);
 
-        process.on('uncaughtException', (error: any) => {
-            errorHandler.captureException(new UncaughtException(error));
+        process.on('uncaughtException', async (error: any) => {
+            await errorHandler.captureException(new UncaughtException(error));
             process.exit(1);
         });
     }

@@ -17,6 +17,7 @@ This decorator will wrap your whole function into a try/catch and you can pass a
         handleOnly?: boolean;
         customResponseMessage?: string;
         errorWrapperClass?: { new (param1: Error) };
+        isSynchronous?: boolean;
     }
 
     // Only pass in exception (this will throw an SqlException)
