@@ -29,11 +29,13 @@
         "postpack": "rm *.d.ts && rm *.js && rm -rf modules"
     },
     "devDependencies": {
+        "@types/config": "0.0.34",
         "@types/node": "^12.6.1",
         "tslint": "^5.18.0",
         "typescript": "^3.1.6"
     },
     "dependencies": {
+        "config": "^3.2.3",
         "deepmerge": "^4.0.0"
     }
 }
