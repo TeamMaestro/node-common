@@ -1,2 +1,2 @@
-export * from './breadcrumb.interface';
+export * from './breadcrum.interface';
 export * from './error-handler.interface';

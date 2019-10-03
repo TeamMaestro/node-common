@@ -1,8 +1,8 @@
-import { Breadcrumb } from './breadcrumb.interface';
+import { Breadcrum } from './breadcrum.interface';
 
 export interface ErrorHandler {
 
-    captureBreadcrumb(breadcrumb: Breadcrumb);
+    captureBreadcrumb(breadcrumb: Breadcrum);
 
     captureException(error: Error);
 
