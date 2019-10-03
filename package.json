@@ -32,5 +32,8 @@
         "@types/node": "^12.6.1",
         "tslint": "^5.18.0",
         "typescript": "^3.1.6"
+    },
+    "dependencies": {
+        "deepmerge": "^4.0.0"
     }
 }
