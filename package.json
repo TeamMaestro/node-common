@@ -31,11 +31,14 @@
     "devDependencies": {
         "@types/config": "0.0.34",
         "@types/node": "^12.6.1",
+        "@types/raven": "^2.5.3",
         "tslint": "^5.18.0",
         "typescript": "^3.1.6"
     },
     "dependencies": {
         "config": "^3.2.3",
-        "deepmerge": "^4.0.0"
+        "deepmerge": "^4.0.0",
+        "log4js": "^6.1.0",
+        "raven": "^2.6.4"
     }
 }
