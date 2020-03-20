@@ -24,18 +24,16 @@ export class NodeEventHandler {
 
         process.on('uncaughtException', async (error: any) => {
             await errorHandler.captureException(new UncaughtException(error));
-            process.exit(1);
         });
     }
 
     private static logRejection(error: any) {
         // tslint:disable-next-line
-        console.error('UNHANDLED REJECTION: ' + error);
+        console.error('UNHANDLED REJECTION:', error);
     }
 
     private static logException(error: any) {
         // tslint:disable-next-line
-        console.error('UNCAUGHT EXCEPTION: ' + error);
-        process.exit(1);
+        console.error('UNCAUGHT EXCEPTION:', error);
     }
 }
