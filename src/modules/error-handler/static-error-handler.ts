@@ -18,7 +18,7 @@ export class StaticErrorHandlerService {
             Raven.captureBreadcrumb(breadcrumb);
         }
         else {
-            this.logger.info(breadcrumb.message);
+            this.logger.info(breadcrumb.message, breadcrumb.data);
         }
     }
 
