@@ -1,6 +1,7 @@
 import { Logger } from 'log4js';
 import * as Raven from 'raven';
 import { Breadcrum } from '../interfaces';
+import { getConfig } from '../utility/get-config';
 import { getLogger } from '../utility/get-logger';
 
 /**
@@ -22,21 +23,23 @@ export class StaticErrorHandlerService {
     }
 
     static captureException(error: Error, logger?: Logger) {
+        const sanitizedError = this.sanitizeError(error);
+        sanitizedError.stack = this.sanitizeStack(sanitizedError.stack);
         if (process.env.DEPLOYMENT) {
-            if (this.sizeInBites(error) > RAVEN_DISPLAY_LIMIT) {
+            if (this.sizeInBites(sanitizedError) > RAVEN_DISPLAY_LIMIT) {
                 this.captureMessage(
-                    `Error with message "${error.message}" is too large and will not have all data displayed.`
+                    `Error with message "${sanitizedError.message}" is too large and will not have all data displayed.`
                 );
             }
 
-            Raven.captureException(error, (e: any) => {
+            Raven.captureException(sanitizedError, (e: any) => {
                 if (e) {
                     this.logger.error(e);
                 }
             });
         }
 
-        (logger || this.logger).error(error);
+        (logger || this.logger).error(sanitizedError);
     }
 
     static captureMessage(message: string, logger?: Logger) {
@@ -71,5 +74,40 @@ export class StaticErrorHandlerService {
             }
         }
         return bytes;
+    }
+
+    private static sanitizeError(originalError: Error) {
+        const sanitizeException = getConfig('logger.sanitizeException', true);
+        if (sanitizeException) {
+            const error = new Error(originalError.message);
+            error.message = originalError.message;
+            error.name = originalError.name;
+            error.stack = originalError.stack;
+            (error as any).loggedMetadata = (originalError as any).loggedMetadata;
+            (error as any).__proto__ = Object.getPrototypeOf(originalError);
+            return error;
+        }
+        else {
+            return originalError;
+        }
+
+    }
+
+    private static sanitizeStack(stack: string) {
+        if (!stack) {
+            return stack;
+        }
+        const sanitizeStack: { enabled: boolean; length: number } = getConfig('logger.sanitizeStack', { enabled: true, length: 10000 });
+        if (sanitizeStack.enabled) {
+            if (stack.length < sanitizeStack.length) {
+                return stack;
+            }
+            else {
+                const slimmedStack = stack.slice(0, sanitizeStack.length);
+                const lastLineBreak = slimmedStack.lastIndexOf('\n');
+                return slimmedStack.slice(0, lastLineBreak);
+            }
+        }
+        return stack;
     }
 }
