@@ -81,15 +81,19 @@ export class StaticErrorHandlerService {
         if (sanitizeException) {
             const error = new Error(originalError.message);
             error.message = originalError.message;
-            if (originalError.name) {
-                error.name = originalError.name;
-            }
-            else {
-                delete error.name;
-            }
             error.stack = originalError.stack;
             (error as any).loggedMetadata = (originalError as any).loggedMetadata;
             (error as any).__proto__ = Object.getPrototypeOf(originalError);
+            if (originalError.name && originalError.name !== 'Error') {
+                error.name = originalError.name;
+            }
+            // if there isn't a specific name given, clear the name so the constructor name is used
+            else {
+                // clear the name on the object
+                error.name = undefined;
+                // remove the key from the error
+                delete error.name;
+            }
             return error;
         }
         else {
