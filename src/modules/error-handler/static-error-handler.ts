@@ -81,7 +81,12 @@ export class StaticErrorHandlerService {
         if (sanitizeException) {
             const error = new Error(originalError.message);
             error.message = originalError.message;
-            error.name = originalError.name;
+            if (originalError.name) {
+                error.name = originalError.name;
+            }
+            else {
+                delete error.name;
+            }
             error.stack = originalError.stack;
             (error as any).loggedMetadata = (originalError as any).loggedMetadata;
             (error as any).__proto__ = Object.getPrototypeOf(originalError);
