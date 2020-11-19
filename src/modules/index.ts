@@ -3,5 +3,6 @@ export * from './exceptions';
 export * from './interfaces';
 export * from './is-defined';
 export * from './node-event-handler';
+export * from './require-module';
 export * from './try-catch';
 export * from './utility';
