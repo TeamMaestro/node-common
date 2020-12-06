@@ -1,8 +1,24 @@
 import { Logger } from 'log4js';
 import * as Raven from 'raven';
 import { Breadcrum } from '../interfaces';
-import { getConfig } from '../utility/get-config';
 import { getLogger } from '../utility/get-logger';
+
+export interface StaticErrorHandlerConfiguration {
+    /**
+     * Default true
+     */
+    sanitizeException: boolean;
+    sanitizeStack: {
+        /**
+         * Default true
+         */
+        enabled: boolean;
+        /**
+         * Default 10000
+         */
+        length: number;
+    };
+}
 
 /**
  * This ErrorHandler works as a static class with an app configured for Raven.  No instance has to be
@@ -13,6 +29,17 @@ export const RAVEN_DISPLAY_LIMIT = 32752;
 
 export class StaticErrorHandlerService {
     static logger = getLogger();
+    static configuration: StaticErrorHandlerConfiguration = {
+        sanitizeException: true,
+        sanitizeStack: {
+            enabled: true,
+            length: 10000
+        }
+    };
+
+    static setConfiguration(configuration: StaticErrorHandlerConfiguration) {
+        this.configuration = configuration;
+    }
 
     static captureBreadcrumb(breadcrumb: Breadcrum, logger?: Logger) {
         if (process.env.DEPLOYMENT) {
@@ -22,9 +49,9 @@ export class StaticErrorHandlerService {
         (logger || this.logger).info(breadcrumb.message, breadcrumb.data ? breadcrumb.data : '');
     }
 
-    static captureException(error: Error, logger?: Logger) {
-        const sanitizedError = this.sanitizeError(error);
-        sanitizedError.stack = this.sanitizeStack(sanitizedError.stack);
+    static captureException(error: Error, logger?: Logger, configuration?: StaticErrorHandlerConfiguration) {
+        const sanitizedError = this.sanitizeError(error, configuration);
+        sanitizedError.stack = this.sanitizeStack(sanitizedError.stack, configuration);
         if (process.env.DEPLOYMENT) {
             if (this.sizeInBites(sanitizedError) > RAVEN_DISPLAY_LIMIT) {
                 this.captureMessage(
@@ -76,9 +103,9 @@ export class StaticErrorHandlerService {
         return bytes;
     }
 
-    private static sanitizeError(originalError: Error) {
-        const sanitizeException = getConfig('logger.sanitizeException', true);
-        if (sanitizeException) {
+    private static sanitizeError(originalError: Error, configuration?: StaticErrorHandlerConfiguration) {
+        const errorHandlerConfiguration = configuration ?? this.configuration;
+        if (errorHandlerConfiguration.sanitizeException) {
             const error = new Error(originalError.message);
             error.message = originalError.message;
             error.stack = originalError.stack;
@@ -102,17 +129,17 @@ export class StaticErrorHandlerService {
 
     }
 
-    private static sanitizeStack(stack: string) {
+    private static sanitizeStack(stack: string, configuration?: StaticErrorHandlerConfiguration) {
+        const errorHandlerConfiguration = configuration ?? this.configuration;
         if (!stack) {
             return stack;
         }
-        const sanitizeStack: { enabled: boolean; length: number } = getConfig('logger.sanitizeStack', { enabled: true, length: 10000 });
-        if (sanitizeStack.enabled) {
-            if (stack.length < sanitizeStack.length) {
+        if (errorHandlerConfiguration.sanitizeStack.enabled) {
+            if (stack.length < errorHandlerConfiguration.sanitizeStack.length) {
                 return stack;
             }
             else {
-                const slimmedStack = stack.slice(0, sanitizeStack.length);
+                const slimmedStack = stack.slice(0, errorHandlerConfiguration.sanitizeStack.length);
                 const lastLineBreak = slimmedStack.lastIndexOf('\n');
                 return slimmedStack.slice(0, lastLineBreak);
             }
