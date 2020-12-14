@@ -1,6 +1,6 @@
 {
     "name": "@teamhive/node-common",
-    "version": "3.0.0-alpha.4",
+    "version": "3.0.0-alpha.5",
     "description": "This repo houses our shared node functions and node handlers",
     "keywords": [
         "Typescript"
