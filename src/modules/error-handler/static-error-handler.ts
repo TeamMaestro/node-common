@@ -3,6 +3,8 @@ import * as Raven from 'raven';
 import { Breadcrum } from '../interfaces';
 import { getLogger } from '../utility/get-logger';
 
+const DEFAULT_SANITIZE_STACK_LENGTH = 100;
+
 export interface StaticErrorHandlerConfiguration {
     /**
      * Default true
@@ -33,7 +35,7 @@ export class StaticErrorHandlerService {
         sanitizeException: true,
         sanitizeStack: {
             enabled: true,
-            length: 10000
+            length: DEFAULT_SANITIZE_STACK_LENGTH
         }
     };
 
@@ -105,7 +107,7 @@ export class StaticErrorHandlerService {
 
     private static sanitizeError(originalError: Error, configuration?: StaticErrorHandlerConfiguration) {
         const errorHandlerConfiguration = configuration ?? this.configuration;
-        if (errorHandlerConfiguration.sanitizeException) {
+        if (errorHandlerConfiguration?.sanitizeException ?? true) {
             const error = new Error(originalError.message);
             error.message = originalError.message;
             error.stack = originalError.stack;
@@ -134,12 +136,13 @@ export class StaticErrorHandlerService {
         if (!stack) {
             return stack;
         }
-        if (errorHandlerConfiguration.sanitizeStack.enabled) {
-            if (stack.length < errorHandlerConfiguration.sanitizeStack.length) {
+        if (errorHandlerConfiguration?.sanitizeStack?.enabled ?? true) {
+            const length = errorHandlerConfiguration?.sanitizeStack?.length ?? DEFAULT_SANITIZE_STACK_LENGTH;
+            if (stack.length < length) {
                 return stack;
             }
             else {
-                const slimmedStack = stack.slice(0, errorHandlerConfiguration.sanitizeStack.length);
+                const slimmedStack = stack.slice(0, length);
                 const lastLineBreak = slimmedStack.lastIndexOf('\n');
                 return slimmedStack.slice(0, lastLineBreak);
             }
