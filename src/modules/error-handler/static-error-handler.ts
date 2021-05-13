@@ -1,7 +1,9 @@
 import { Logger } from 'log4js';
 import * as Raven from 'raven';
 import { Breadcrum } from '../interfaces';
+import { TryCatchException, TryCatchOptions } from '../try-catch';
 import { getLogger } from '../utility/get-logger';
+import { catchError as catchErrorUtil } from '../try-catch/catch-error.util'; 
 
 const DEFAULT_SANITIZE_STACK_LENGTH = 100;
 
@@ -81,6 +83,16 @@ export class StaticErrorHandlerService {
         }
 
         (logger || this.logger).info(message);
+    }
+
+    /**
+     * Use this to catch an error and handle it the same way as the TryCatch decorator outside of situations where
+     * a decorator can be used / is practical
+     */
+    static catchError(error: any, exception: TryCatchException, options?: TryCatchOptions);
+    static catchError(error: any, options: TryCatchOptions);
+    static catchError(error: any, optionsOrException = {} as TryCatchOptions | TryCatchException, options = {} as TryCatchOptions) {
+        catchErrorUtil(error, optionsOrException, options);
     }
 
     private static sizeInBites(object: any) {
