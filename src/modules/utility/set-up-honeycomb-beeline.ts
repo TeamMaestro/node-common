@@ -7,7 +7,7 @@ function sampleHookFactory(ignoredRoutes: string[], sampleRate: number = 1) {
     
         const deterministicSampler = deterministicSamplerFactory(sampleRate);
 
-        let shouldSample = deterministicSampler(data);
+        let { shouldSample } = deterministicSampler(data);
 
         // drop ignoredRoutes
         if (ignoredRoutes.includes(data["request.path"])) {
