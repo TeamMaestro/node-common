@@ -15,7 +15,7 @@ function sampleHookFactory(ignoredRoutes: string[], sampleRate: number = 1) {
         }
         return {
             shouldSample,
-            sampleRate
+            sampleRate: usedSampleRate
         }
     }
 }
