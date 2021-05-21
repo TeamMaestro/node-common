@@ -3,20 +3,19 @@ import beeline = require('@teamhive/honeycomb-beeline');
 import deterministicSamplerFactory = require('@teamhive/honeycomb-beeline/lib/deterministic_sampler')
 
 function sampleHookFactory(ignoredRoutes: string[], sampleRate: number = 1) {
+    const deterministicSampler = deterministicSamplerFactory(sampleRate);
     return (data: any) => {
-    
-        const deterministicSampler = deterministicSamplerFactory(sampleRate);
-
         let { shouldSample } = deterministicSampler(data);
-
+        let usedSampleRate = sampleRate;
+        
         // drop ignoredRoutes
         if (ignoredRoutes.includes(data["request.path"])) {
             shouldSample = false;
-            sampleRate = 0;
+            usedSampleRate = 0;
         }
         return {
             shouldSample,
-            sampleRate
+            sampleRate: usedSampleRate
         }
     }
 }
