@@ -1,7 +1,9 @@
 import { Logger } from 'log4js';
 import * as Raven from 'raven';
+import * as Sentry from '@sentry/node';
+import * as config from 'config';
 import { Breadcrum } from '../interfaces';
-import { TryCatchException, TryCatchOptions } from '../try-catch';
+import { TryCatchEmitter, TryCatchException, TryCatchOptions } from '../try-catch';
 import { getLogger } from '../utility/get-logger';
 import { catchError as catchErrorUtil } from '../try-catch/catch-error.util'; 
 
@@ -45,41 +47,56 @@ export class StaticErrorHandlerService {
         this.configuration = configuration;
     }
 
-    static captureBreadcrumb(breadcrumb: Breadcrum, logger?: Logger) {
+    static captureBreadcrumb(breadcrumb: Breadcrum | Sentry.Breadcrumb, logger?: Logger) {
         if (process.env.DEPLOYMENT) {
-            Raven.captureBreadcrumb(breadcrumb);
+            if (config.get<boolean>('useSentry')) {
+                Sentry.addBreadcrumb(breadcrumb);
+            }
+            else {
+                Raven.captureBreadcrumb(breadcrumb);
+            }
         }
 
         (logger || this.logger).info(breadcrumb.message, breadcrumb.data ? breadcrumb.data : '');
     }
 
-    static captureException(error: Error, logger?: Logger, configuration?: StaticErrorHandlerConfiguration) {
-        const sanitizedError = this.sanitizeError(error, configuration);
-        sanitizedError.stack = this.sanitizeStack(sanitizedError.stack, configuration);
+    static captureException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass, logger?: Logger, configuration?: StaticErrorHandlerConfiguration) {
+        // extract error from exception if exception passed in
+        const { error, tags } = this.parseException(errorOrException);
+
         if (process.env.DEPLOYMENT) {
-            if (this.sizeInBites(sanitizedError) > RAVEN_DISPLAY_LIMIT) {
+            if (this.sizeInBites(error) > RAVEN_DISPLAY_LIMIT) {
                 this.captureMessage(
-                    `Error with message "${sanitizedError.message}" is too large and will not have all data displayed.`
+                    `Error with message "${error.message}" is too large and will not have all data displayed.`
                 );
             }
 
-            Raven.captureException(sanitizedError, (e: any) => {
-                if (e) {
-                    this.logger.error(e);
-                }
-            });
+            if (config.get<boolean>('useSentry')) {
+                return Sentry.captureException(error, { tags });
+            } else {
+                return Raven.captureException(error, (e: any) => {
+                    if (e) {
+                        this.logger.error(e);
+                    }
+                });
+            }
         }
 
-        (logger || this.logger).error(sanitizedError);
+        (logger || this.logger).error(error);
     }
 
     static captureMessage(message: string, logger?: Logger) {
         if (process.env.DEPLOYMENT) {
-            Raven.captureMessage(message, (e: any) => {
-                if (e) {
-                    this.logger.error(e);
-                }
-            });
+            if (config.get<boolean>('useSentry')) {
+                Sentry.captureMessage(message);
+            }
+            else {
+                Raven.captureMessage(message, (e: any) => {
+                    if (e) {
+                        this.logger.error(e);
+                    }
+                });
+            }
         }
 
         (logger || this.logger).info(message);
@@ -93,6 +110,25 @@ export class StaticErrorHandlerService {
     static catchError(error: any, options: TryCatchOptions);
     static catchError(error: any, optionsOrException = {} as TryCatchOptions | TryCatchException, options = {} as TryCatchOptions) {
         catchErrorUtil(error, optionsOrException, options);
+    }
+
+    private static parseException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass) {
+        let error: Error;
+        let tags: { [key: string]: any } ;
+
+        if (errorOrException instanceof TryCatchEmitter.baseErrorClass) {
+            const exception = errorOrException;
+            const subError = exception.error;
+            subError.name = exception.constructor ? exception.constructor.name : subError.name;
+            error = subError;
+            tags = exception.tags;
+        }
+        else {
+            error = errorOrException;
+            tags = errorOrException.tags;
+        }
+        
+        return { error, tags: tags || {} };
     }
 
     private static sizeInBites(object: any) {
@@ -115,50 +151,5 @@ export class StaticErrorHandlerService {
             }
         }
         return bytes;
-    }
-
-    private static sanitizeError(originalError: Error, configuration?: StaticErrorHandlerConfiguration) {
-        const errorHandlerConfiguration = configuration ?? this.configuration;
-        if (errorHandlerConfiguration?.sanitizeException ?? true) {
-            const error = new Error(originalError.message);
-            error.message = originalError.message;
-            error.stack = originalError.stack;
-            (error as any).loggedMetadata = (originalError as any).loggedMetadata;
-            (error as any).__proto__ = Object.getPrototypeOf(originalError);
-            if (originalError.name && originalError.name !== 'Error') {
-                error.name = originalError.name;
-            }
-            // if there isn't a specific name given, clear the name so the constructor name is used
-            else {
-                // clear the name on the object
-                error.name = undefined;
-                // remove the key from the error
-                delete error.name;
-            }
-            return error;
-        }
-        else {
-            return originalError;
-        }
-
-    }
-
-    private static sanitizeStack(stack: string, configuration?: StaticErrorHandlerConfiguration) {
-        const errorHandlerConfiguration = configuration ?? this.configuration;
-        if (!stack) {
-            return stack;
-        }
-        if (errorHandlerConfiguration?.sanitizeStack?.enabled ?? true) {
-            const length = errorHandlerConfiguration?.sanitizeStack?.length ?? DEFAULT_SANITIZE_STACK_LENGTH;
-            if (stack.length < length) {
-                return stack;
-            }
-            else {
-                const slimmedStack = stack.slice(0, length);
-                const lastLineBreak = slimmedStack.lastIndexOf('\n');
-                return slimmedStack.slice(0, lastLineBreak);
-            }
-        }
-        return stack;
     }
 }

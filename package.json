@@ -37,6 +37,7 @@
     },
     "dependencies": {
         "@teamhive/honeycomb-beeline": "^2.8.0-beta.1",
+        "@sentry/node": "^6.3.6",
         "config": "^3.2.3",
         "deepmerge": "^4.0.0",
         "log4js": "^6.1.0",

@@ -11,12 +11,26 @@ export function catchError(error: any, optionsOrException = {} as TryCatchOption
     if (secondParamOptions.customResponseMessage ||
         secondParamOptions.errorWrapperClass ||
         secondParamOptions.isSynchronous !== undefined ||
-        secondParamOptions.handleOnly !== undefined) {
+        secondParamOptions.handleOnly !== undefined ||
+        secondParamOptions.tags) {
         options = secondParamOptions;
     }
     else {
         exception = optionsOrException as TryCatchException;
     }
+
+    // append tags to exception or error and return
+    const appendTags = (error: any) => {
+        if (options && options.tags) {
+            // the preexisting tag values override any added since they are closer
+            // to where the error was thrown
+            error.tags = {
+                ...options.tags,
+                ...(error['tags'] || {})
+            };
+        }
+        return error;
+    };
     
     // helper function to pass appropriate arguments to exception
     const getException = (error: any, Exception: TryCatchException) => {
@@ -24,25 +38,25 @@ export function catchError(error: any, optionsOrException = {} as TryCatchOption
             if (Array.isArray(TryCatchEmitter.baseErrorClass)) {
                 for (const baseErrorClass of TryCatchEmitter.baseErrorClass) {
                     if (error instanceof baseErrorClass) {
-                        return error;
+                        return appendTags(error);
                     }
                 }
             }
             else if (error instanceof TryCatchEmitter.baseErrorClass) {
-                return error;
+                return appendTags(error);
             }
         }
         if (new Exception(error).error) {
             if (options.customResponseMessage) {
-                return new Exception(error, options.customResponseMessage);
+                return appendTags(new Exception(error, options.customResponseMessage));
             }
-            return new Exception(error);
+            return appendTags(new Exception(error));
         }
     
         if (options.customResponseMessage) {
-            return new Exception(options.customResponseMessage);
+            return appendTags(new Exception(options.customResponseMessage));
         }
-        return new Exception();
+        return appendTags(new Exception());
     };
 
     // wrap the error if wrapper passed
@@ -60,9 +74,9 @@ export function catchError(error: any, optionsOrException = {} as TryCatchOption
     // if handler passed in capture the exception, otherwise throw it
     if (options.handleOnly) {
         // emit for app to subscribe to and handle
-        TryCatchEmitter.emit(scopedException || error);
+        TryCatchEmitter.emit(appendTags(scopedException || error));
     }
     else {
-        throw scopedException || error;
+        throw appendTags(scopedException || error);
     }
 }
