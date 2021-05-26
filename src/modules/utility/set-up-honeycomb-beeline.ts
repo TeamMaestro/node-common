@@ -2,7 +2,12 @@ import { BeelineOpts } from '@teamhive/honeycomb-beeline';
 import beeline = require('@teamhive/honeycomb-beeline');
 import deterministicSamplerFactory = require('@teamhive/honeycomb-beeline/lib/deterministic_sampler')
 
-function sampleHookFactory(ignoredRoutes: string[], sampleRate: number = 1) {
+function sampleHookFactory(options: {
+    ignoredRoutes: string[], 
+    sampleRate?: number;
+    ignoredBaseUrls: string[]
+}) {
+    const {ignoredBaseUrls = [], ignoredRoutes, sampleRate = 1} = options;
     const deterministicSampler = deterministicSamplerFactory(sampleRate);
     return (data: any) => {
         let { shouldSample } = deterministicSampler(data);
@@ -10,6 +15,10 @@ function sampleHookFactory(ignoredRoutes: string[], sampleRate: number = 1) {
         
         // drop ignoredRoutes
         if (ignoredRoutes.includes(data["request.path"])) {
+            shouldSample = false;
+            usedSampleRate = 0;
+        }
+        if (ignoredBaseUrls.find((url) => data.url && typeof data.url === 'string' && data.url.startsWith(url ))) {
             shouldSample = false;
             usedSampleRate = 0;
         }
@@ -29,8 +38,12 @@ export function setUpHoneycombBeeline(opts: BeelineOpts & {
      */
     ignoredRoutes?: string[];
     disabled?: boolean;
+    /**
+     * Ignores http requests sent to these urls
+     */
+    ignoredBaseUrls?: string[];
 }) {
-    const {ignoredRoutes = ['/api/v1/versions']} = opts;
+    const {ignoredRoutes = ['/api/v1/versions'], sampleRate, ignoredBaseUrls} = opts;
     if (!opts.writeKey) {
         const writeKey = process.env.HONEYCOMB_WRITEKEY;
         if (writeKey && writeKey.length > 0) {
@@ -52,7 +65,11 @@ export function setUpHoneycombBeeline(opts: BeelineOpts & {
         opts.serviceName = process.env.APP;
     }
     if (!opts.samplerHook) {
-        opts.samplerHook = sampleHookFactory(ignoredRoutes, opts.sampleRate)
+        opts.samplerHook = sampleHookFactory({
+            ignoredRoutes,
+            sampleRate,
+            ignoredBaseUrls
+        })
     }
     beeline(opts);
 }
