@@ -5,25 +5,9 @@ import { Breadcrum } from '../interfaces';
 import { TryCatchEmitter, TryCatchException, TryCatchOptions } from '../try-catch';
 import { catchError as catchErrorUtil } from '../try-catch/catch-error.util';
 import { getLogger } from '../utility/get-logger';
- 
 
-const DEFAULT_SANITIZE_STACK_LENGTH = 100;
 
 export interface StaticErrorHandlerConfiguration {
-    /**
-     * Default true
-     */
-    sanitizeException: boolean;
-    sanitizeStack: {
-        /**
-         * Default true
-         */
-        enabled: boolean;
-        /**
-         * Default 10000
-         */
-        length: number;
-    };
     useSentry: boolean;
 }
 
@@ -37,11 +21,6 @@ export const RAVEN_DISPLAY_LIMIT = 32752;
 export class StaticErrorHandlerService {
     static logger = getLogger();
     static configuration: StaticErrorHandlerConfiguration = {
-        sanitizeException: true,
-        sanitizeStack: {
-            enabled: true,
-            length: DEFAULT_SANITIZE_STACK_LENGTH
-        },
         useSentry: true
     };
 
