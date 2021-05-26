@@ -100,8 +100,12 @@ export class StaticErrorHandlerService {
         if (errorOrException instanceof TryCatchEmitter.baseErrorClass) {
             const exception = errorOrException;
             const subError = exception.error;
-            subError.name = exception.constructor ? exception.constructor.name : subError.name;
-            error = subError;
+            if (subError && exception.constructor) {
+                subError.name = exception.constructor.name;
+                error = subError;
+            } else {
+                error = exception;
+            }
             tags = exception.tags;
         }
         else {
