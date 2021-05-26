@@ -1,29 +1,14 @@
+import * as Sentry from '@sentry/node';
 import { Logger } from 'log4js';
 import * as Raven from 'raven';
-import * as Sentry from '@sentry/node';
-import * as config from 'config';
 import { Breadcrum } from '../interfaces';
 import { TryCatchEmitter, TryCatchException, TryCatchOptions } from '../try-catch';
+import { catchError as catchErrorUtil } from '../try-catch/catch-error.util';
 import { getLogger } from '../utility/get-logger';
-import { catchError as catchErrorUtil } from '../try-catch/catch-error.util'; 
 
-const DEFAULT_SANITIZE_STACK_LENGTH = 100;
 
 export interface StaticErrorHandlerConfiguration {
-    /**
-     * Default true
-     */
-    sanitizeException: boolean;
-    sanitizeStack: {
-        /**
-         * Default true
-         */
-        enabled: boolean;
-        /**
-         * Default 10000
-         */
-        length: number;
-    };
+    useSentry: boolean;
 }
 
 /**
@@ -36,20 +21,16 @@ export const RAVEN_DISPLAY_LIMIT = 32752;
 export class StaticErrorHandlerService {
     static logger = getLogger();
     static configuration: StaticErrorHandlerConfiguration = {
-        sanitizeException: true,
-        sanitizeStack: {
-            enabled: true,
-            length: DEFAULT_SANITIZE_STACK_LENGTH
-        }
+        useSentry: true
     };
 
     static setConfiguration(configuration: StaticErrorHandlerConfiguration) {
         this.configuration = configuration;
     }
 
-    static captureBreadcrumb(breadcrumb: Breadcrum | Sentry.Breadcrumb, logger?: Logger) {
+    static captureBreadcrumb(breadcrumb: Breadcrum | Sentry.Breadcrumb, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
         if (process.env.DEPLOYMENT) {
-            if (config.get<boolean>('useSentry')) {
+            if (configuration.useSentry) {
                 Sentry.addBreadcrumb(breadcrumb);
             }
             else {
@@ -60,7 +41,7 @@ export class StaticErrorHandlerService {
         (logger || this.logger).info(breadcrumb.message, breadcrumb.data ? breadcrumb.data : '');
     }
 
-    static captureException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass, logger?: Logger, configuration?: StaticErrorHandlerConfiguration) {
+    static captureException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
         // extract error from exception if exception passed in
         const { error, tags } = this.parseException(errorOrException);
 
@@ -71,7 +52,7 @@ export class StaticErrorHandlerService {
                 );
             }
 
-            if (config.get<boolean>('useSentry')) {
+            if (configuration.useSentry) {
                 return Sentry.captureException(error, { tags });
             } else {
                 return Raven.captureException(error, (e: any) => {
@@ -85,9 +66,9 @@ export class StaticErrorHandlerService {
         (logger || this.logger).error(error);
     }
 
-    static captureMessage(message: string, logger?: Logger) {
+    static captureMessage(message: string, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
         if (process.env.DEPLOYMENT) {
-            if (config.get<boolean>('useSentry')) {
+            if (configuration.useSentry) {
                 Sentry.captureMessage(message);
             }
             else {
