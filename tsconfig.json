@@ -11,7 +11,8 @@
         "declaration": true,
         "moduleResolution": "node",
         "noUnusedLocals": true,
-        "removeComments": true
+        "removeComments": true,
+        "types": ["jest"]
     },
     "exclude": [
         "node_modules",
