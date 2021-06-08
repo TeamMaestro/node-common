@@ -43,13 +43,14 @@ export class StaticErrorHandlerService {
 
     static captureException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
         // extract error from exception if exception passed in
-        const { error, tags } = this.parseException(errorOrException);
+        let { error, tags } = this.parseException(errorOrException);
 
-        if (process.env.DEPLOYMENT) {
-            if (this.sizeInBites(error) > RAVEN_DISPLAY_LIMIT) {
+        if (process.env.DEPLOYMENT && error) {
+            if (!this.isAcceptableSize(error, RAVEN_DISPLAY_LIMIT)) {
                 this.captureMessage(
                     `Error with message "${error.message}" is too large and will not have all data displayed.`
                 );
+                error = this.sanitizeUnacceptablyLargeError(error);
             }
 
             if (configuration.useSentry) {
@@ -61,9 +62,21 @@ export class StaticErrorHandlerService {
                     }
                 });
             }
+        } else if (!error) {
+            
+            this.captureUndefinedException();
         }
 
-        (logger || this.logger).error(error);
+        if (error) {
+            (logger || this.logger).error(error);
+        }
+    }
+
+    /**
+     * capture an error so a stack trace is generated that can indicate where in the application called capture exception with no error
+     */
+    static captureUndefinedException() {
+        this.captureException(new Error('captureException was called and no error was provided'));
     }
 
     static captureMessage(message: string, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
@@ -97,7 +110,7 @@ export class StaticErrorHandlerService {
         let error: Error;
         let tags: { [key: string]: any } ;
 
-        if (errorOrException instanceof TryCatchEmitter.baseErrorClass) {
+        if (TryCatchEmitter.baseErrorClass && errorOrException instanceof TryCatchEmitter.baseErrorClass) {
             const exception = errorOrException;
             const subError = exception.error;
             if (subError && exception.constructor) {
@@ -110,18 +123,18 @@ export class StaticErrorHandlerService {
         }
         else {
             error = errorOrException;
-            tags = errorOrException.tags;
+            tags = errorOrException?.tags;
         }
         
-        return { error, tags: tags || {} };
+        return { error, tags: tags ?? {} };
     }
 
-    private static sizeInBites(object: any) {
+    static isAcceptableSize(object: any, acceptableSizeInBytes: number) {
         const objectList = [];
         const stack = [object];
         let bytes = 0;
 
-        while (stack.length) {
+        while (stack.length && bytes < acceptableSizeInBytes) {
             const value = stack.pop();
 
             if (typeof value === 'boolean') {
@@ -135,6 +148,22 @@ export class StaticErrorHandlerService {
                 Object.getOwnPropertyNames(value).forEach(key => stack.push(value[key]));
             }
         }
-        return bytes;
+        return bytes < acceptableSizeInBytes;
+    }
+
+    /**
+     * Removes extraneous data from the error. Only the message and the stack
+     * is left
+     */
+    static sanitizeUnacceptablyLargeError(object: any) {
+        // get a list of all keys except the message and the stack 
+        const keys = Object.keys(object).filter(key => !['message', 'stack'].includes(key));
+
+        // remove all other keys
+        keys.forEach((key) => {
+            delete object[key];
+        });
+
+        return object;
     }
 }
