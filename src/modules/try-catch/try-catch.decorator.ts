@@ -9,19 +9,22 @@ export function TryCatch(options: TryCatchOptions): MethodDecorator;
 export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchException, options = {} as TryCatchOptions) {
     // return the decorator function
     return (_target: any, _key: any, descriptor: any) => {
+        const beelineEnabled = !!beeline['_apiForTesting']();
         // store original method
         const originalMethod = descriptor.value;
 
         const startTrace = (context: beeline.MetadataContext) => {
-            const traceContext = beeline.getTraceContext()
-            let parentSpanId, traceId: string;
-            if (traceContext) {
-                const traceContextString = beeline.honeycomb.marshalTraceContext(traceContext);
-                let parsedContext = beeline.honeycomb.unmarshalTraceContext(traceContextString);
-                parentSpanId = parsedContext.parentSpanId;
-                traceId = parsedContext.traceId;
+            if (beelineEnabled) {
+                const traceContext = beeline?.getTraceContext()
+                let parentSpanId, traceId: string;
+                if (traceContext) {
+                    const traceContextString = beeline.honeycomb.marshalTraceContext(traceContext);
+                    let parsedContext = beeline.honeycomb.unmarshalTraceContext(traceContextString);
+                    parentSpanId = parsedContext.parentSpanId;
+                    traceId = parsedContext.traceId;
+                }
+                return beeline.startTrace(context, traceId, parentSpanId);
             }
-            return beeline.startTrace(context, traceId, parentSpanId);
         }
 
         // check if original methods is async
@@ -39,7 +42,9 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
                 catch (error) {
                     catchError(error, optionsOrException, options);
                 } finally {
-                    beeline.finishTrace(span);
+                    if (span) {
+                        beeline.finishTrace(span);
+                    }
                 }
             };
         }
@@ -57,7 +62,9 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
                 catch (error) {
                     catchError(error, optionsOrException, options);
                 } finally {
-                    beeline.finishTrace(span);
+                    if (span) {
+                        beeline.finishTrace(span);
+                    }
                 }
             };
         }
