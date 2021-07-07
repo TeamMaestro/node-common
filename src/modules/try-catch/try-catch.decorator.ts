@@ -13,37 +13,29 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
         // store original method
         const originalMethod = descriptor.value;
 
-        const startTrace = (context: beeline.MetadataContext) => {
-            if (beelineEnabled) {
-                const traceContext = beeline?.getTraceContext()
-                let parentSpanId, traceId: string;
-                if (traceContext) {
-                    const traceContextString = beeline.honeycomb.marshalTraceContext(traceContext);
-                    let parsedContext = beeline.honeycomb.unmarshalTraceContext(traceContextString);
-                    parentSpanId = parsedContext.parentSpanId;
-                    traceId = parsedContext.traceId;
-                }
-                return beeline.startTrace(context, traceId, parentSpanId);
-            }
-        }
-
         // check if original methods is async
         if (!options.isSynchronous) {
             descriptor.value = async function(...args: any[]) {
                 const {tryCatchOptions} = getTryCatchOptions(optionsOrException, options);
-                let span: beeline.Span;
-                if (tryCatchOptions.createTrace) {
-                    span = startTrace(tryCatchOptions.createTrace);
-                }
-                // try catch the original method passing in args it was called with
-                try {
-                    return await originalMethod.apply(this, args);
-                }
-                catch (error) {
-                    catchError(error, optionsOrException, options);
-                } finally {
-                    if (span) {
-                        beeline.finishTrace(span);
+                if (beelineEnabled && tryCatchOptions.createTrace) {
+
+                    return await beeline.startAsyncSpan(tryCatchOptions.createTrace, async (span) => {
+                        // try catch the original method passing in args it was called with
+                        try {
+                            return await originalMethod.apply(this, args);
+                        }
+                        catch (error) {
+                            catchError(error, optionsOrException, options);
+                        } finally {
+                                beeline.finishTrace(span);
+                        }
+                    })
+                } else {
+                    try {
+                        return await originalMethod.apply(this, args);
+                    }
+                    catch (error) {
+                        catchError(error, optionsOrException, options);
                     }
                 }
             };
@@ -53,7 +45,7 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
                 const {tryCatchOptions} = getTryCatchOptions(optionsOrException, options);
                 let span: beeline.Span;
                 if (tryCatchOptions.createTrace) {
-                    span = startTrace(tryCatchOptions.createTrace);
+                    span = beeline.startSpan(tryCatchOptions.createTrace)
                 }
                 // try catch the original method passing in args it was called with
                 try {
@@ -63,7 +55,7 @@ export function TryCatch(optionsOrException = {} as TryCatchOptions | TryCatchEx
                     catchError(error, optionsOrException, options);
                 } finally {
                     if (span) {
-                        beeline.finishTrace(span);
+                        beeline.finishSpan(span);
                     }
                 }
             };
