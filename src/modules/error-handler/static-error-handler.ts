@@ -5,10 +5,14 @@ import { Breadcrum } from '../interfaces';
 import { TryCatchEmitter, TryCatchException, TryCatchOptions } from '../try-catch';
 import { catchError as catchErrorUtil } from '../try-catch/catch-error.util';
 import { getLogger } from '../utility/get-logger';
+import beeline = require('@teamhive/honeycomb-beeline');
 
 
 export interface StaticErrorHandlerConfiguration {
     useSentry: boolean;
+    errorTags?: {
+        [key: string]: string;
+    };
 }
 
 /**
@@ -21,7 +25,8 @@ export const RAVEN_DISPLAY_LIMIT = 32752;
 export class StaticErrorHandlerService {
     static logger = getLogger();
     static configuration: StaticErrorHandlerConfiguration = {
-        useSentry: true
+        useSentry: true,
+        errorTags: {}
     };
 
     static setConfiguration(configuration: StaticErrorHandlerConfiguration) {
@@ -43,8 +48,8 @@ export class StaticErrorHandlerService {
 
     static captureException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
         // extract error from exception if exception passed in
-        let { error, tags } = this.parseException(errorOrException);
-
+        let { error, tags = {} } = this.parseException(errorOrException);
+        const {errorTags = {}} = configuration;
         if (process.env.DEPLOYMENT && error) {
             if (!this.isAcceptableSize(error, RAVEN_DISPLAY_LIMIT)) {
                 this.captureMessage(
@@ -54,7 +59,11 @@ export class StaticErrorHandlerService {
             }
 
             if (configuration.useSentry) {
-                return Sentry.captureException(error, { tags });
+                return Sentry.captureException(error, { tags: {
+                    ...this.getTraceTag(),
+                    ...errorTags,
+                    ...tags,
+                } });
             } else {
                 return Raven.captureException(error, (e: any) => {
                     if (e) {
@@ -79,10 +88,18 @@ export class StaticErrorHandlerService {
         this.captureException(new Error('captureException was called and no error was provided'));
     }
 
-    static captureMessage(message: string, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
+    static captureMessage(message: string, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration, tags: {[key: string]: string} = {}) {
+        const {errorTags = {}} = configuration;
         if (process.env.DEPLOYMENT) {
             if (configuration.useSentry) {
-                Sentry.captureMessage(message);
+                Sentry.captureMessage(message, {
+                    tags: {
+                        ...this.getTraceTag(),
+                        ...errorTags,
+                        ...tags,
+                        
+                    }
+                });
             }
             else {
                 Raven.captureMessage(message, (e: any) => {
@@ -165,5 +182,22 @@ export class StaticErrorHandlerService {
         });
 
         return object;
+    }
+
+    /**
+     * Appends the traceId as a tag that can be sent to sentry
+     */
+    private static getTraceTag() {
+        const beelineEnabled = !!beeline['_apiForTesting']();
+
+        if (beelineEnabled) {
+            const traceContext = beeline.getTraceContext();
+            if (traceContext && traceContext.id) {
+                return {
+                    traceId: traceContext.id
+                }
+            }
+        }
+        return {};
     }
 }
