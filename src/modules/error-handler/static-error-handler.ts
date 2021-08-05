@@ -59,17 +59,23 @@ export class StaticErrorHandlerService {
             }
 
             if (configuration.useSentry) {
-                return Sentry.captureException(error, { tags: {
+                const sentryId =  Sentry.captureException(error, { tags: {
                     ...this.getTraceTag(),
                     ...errorTags,
                     ...tags,
                 } });
+
+                this.addSentryContextToTrace(error, sentryId);
+                return sentryId;
             } else {
-                return Raven.captureException(error, (e: any) => {
+                const sentryId = Raven.captureException(error, (e: any) => {
                     if (e) {
                         this.logger.error(e);
                     }
                 });
+
+                this.addSentryContextToTrace(error, sentryId);
+                return sentryId;
             }
         } else if (!error) {
             
@@ -196,6 +202,22 @@ export class StaticErrorHandlerService {
                 return {
                     traceId: traceContext.id
                 }
+            }
+        }
+        return {};
+    }
+
+    private static addSentryContextToTrace(exception: Error, sentryId: string) {
+        const beelineEnabled = !!beeline['_apiForTesting']();
+        if (beelineEnabled) {
+            const traceContext = beeline.getTraceContext();
+            if (traceContext && traceContext.id) {
+                // append to the span so each span that causes an error has context around the request that was created
+                beeline.addContext({
+                    'error.sentryId': sentryId,
+                    'error.name': Object.getPrototypeOf(exception)?.constructor?.name,
+                    'error.message': exception.message
+                });
             }
         }
         return {};
