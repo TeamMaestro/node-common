@@ -1,6 +1,7 @@
 import { BeelineOpts } from '@teamhive/honeycomb-beeline';
 import beeline = require('@teamhive/honeycomb-beeline');
 import deterministicSamplerFactory = require('@teamhive/honeycomb-beeline/lib/deterministic_sampler')
+import { TELEMETRY_DO_NOT_SAMPLE_KEY } from '../consts';
 
 function sampleHookFactory(options: {
     ignoredRoutes: string[], 
@@ -12,7 +13,13 @@ function sampleHookFactory(options: {
     return (data: any) => {
         let { shouldSample } = deterministicSampler(data);
         let usedSampleRate = sampleRate;
-        
+
+        // check for manual ignore
+        if (data[TELEMETRY_DO_NOT_SAMPLE_KEY]) {
+            shouldSample = false;
+            usedSampleRate = 0;
+        }
+
         // drop ignoredRoutes
         if (ignoredRoutes.includes(data["request.path"])) {
             shouldSample = false;

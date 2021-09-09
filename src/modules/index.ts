@@ -1,3 +1,4 @@
+export * from './consts';
 export * from './error-handler';
 export * from './exceptions';
 export * from './interfaces';
