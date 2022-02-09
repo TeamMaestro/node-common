@@ -1,4 +1,4 @@
-import beeline = require("@teamhive/honeycomb-beeline");
+import beeline = require("honeycomb-beeline");
 
 export interface TryCatchOptions {
     handleOnly?: boolean;

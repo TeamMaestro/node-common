@@ -1,6 +1,6 @@
-import { BeelineOpts } from '@teamhive/honeycomb-beeline';
-import beeline = require('@teamhive/honeycomb-beeline');
-import deterministicSamplerFactory = require('@teamhive/honeycomb-beeline/lib/deterministic_sampler')
+import { BeelineOpts } from 'honeycomb-beeline';
+import beeline = require('honeycomb-beeline');
+import deterministicSamplerFactory = require('honeycomb-beeline/lib/deterministic_sampler')
 import { TELEMETRY_DO_NOT_SAMPLE_KEY } from '../consts';
 
 function sampleHookFactory(options: {
@@ -58,7 +58,7 @@ export function setUpHoneycombBeeline(opts: BeelineOpts & {
         } else {
             console.warn('No honeycomb writekey provided')
             if (opts.transmission === undefined || opts.transmission === null) {
-                opts.disabled = true
+                opts.disabled = true as any;
                 console.warn('Honeycomb transmission disabled.')
             }
             

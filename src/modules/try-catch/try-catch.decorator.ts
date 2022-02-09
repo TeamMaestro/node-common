@@ -2,7 +2,7 @@ import { catchError } from './catch-error.util';
 import { getTryCatchOptions } from './get-try-catch-options';
 import { TryCatchException } from './try-catch-exception.interface';
 import { TryCatchOptions } from './try-catch-options.interface';
-import beeline = require('@teamhive/honeycomb-beeline');
+import beeline = require('honeycomb-beeline');
 
 export function TryCatch(exception: TryCatchException, options?: TryCatchOptions): MethodDecorator;
 export function TryCatch(options: TryCatchOptions): MethodDecorator;

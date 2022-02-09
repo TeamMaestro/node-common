@@ -5,7 +5,7 @@ import { Breadcrum } from '../interfaces';
 import { TryCatchEmitter, TryCatchException, TryCatchOptions } from '../try-catch';
 import { catchError as catchErrorUtil } from '../try-catch/catch-error.util';
 import { getLogger } from '../utility/get-logger';
-import beeline = require('@teamhive/honeycomb-beeline');
+import beeline = require('honeycomb-beeline');
 
 
 export interface StaticErrorHandlerConfiguration {
