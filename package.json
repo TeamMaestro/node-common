@@ -1,24 +1,19 @@
 {
-    "name": "@teamhive/node-common",
+    "name": "@teammaestro/node-common",
     "version": "4.0.0",
     "description": "This repo houses our shared node functions and node handlers",
     "keywords": [
         "Typescript"
     ],
     "license": "ISC",
-    "author": "TeamHive",
-    "contributors": [
-        "Josh Gibson <gibsonjoshua55>",
-        "Tyler Vander Maas <tvmaasjazz>",
-        "John Pinkster <jpinkster>"
-    ],
-    "homepage": "https://github.com/TeamHive/node-common",
+    "author": "TeamMaestro",
+    "homepage": "https://github.com/TeamMaestro/node-common",
     "repository": {
         "type": "git",
-        "url": "https://github.com/TeamHive/node-common.git"
+        "url": "https://github.com/TeamMaestro/node-common.git"
     },
     "bugs": {
-        "url": "https://github.com/TeamHive/node-common/issues"
+        "url": "https://github.com/TeamMaestro/node-common/issues"
     },
     "scripts": {
         "test": "jest",
