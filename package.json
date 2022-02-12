@@ -15,6 +15,7 @@
     "bugs": {
         "url": "https://github.com/TeamMaestro/node-common/issues"
     },
+    "private": false,
     "scripts": {
         "test": "jest",
         "watch": "tsc -w",
