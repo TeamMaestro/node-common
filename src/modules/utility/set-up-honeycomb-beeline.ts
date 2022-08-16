@@ -15,7 +15,7 @@ function sampleHookFactory(options: {
         let usedSampleRate = sampleRate;
 
         // check for manual ignore
-        if (data[TELEMETRY_DO_NOT_SAMPLE_KEY] || `app.${data[TELEMETRY_DO_NOT_SAMPLE_KEY]}`) {
+        if (data[TELEMETRY_DO_NOT_SAMPLE_KEY] || data[`app.${TELEMETRY_DO_NOT_SAMPLE_KEY}`]) {
             shouldSample = false;
             usedSampleRate = 0;
         }
