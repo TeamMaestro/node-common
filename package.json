@@ -1,6 +1,6 @@
 {
     "name": "@teammaestro/node-common",
-    "version": "4.2.1",
+    "version": "5.0.0",
     "description": "This repo houses our shared node functions and node handlers",
     "keywords": [
         "Typescript"
