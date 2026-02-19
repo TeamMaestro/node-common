@@ -7,7 +7,6 @@ import { catchError as catchErrorUtil } from '../try-catch/catch-error.util';
 import { getLogger } from '../utility/get-logger';
 import beeline = require('honeycomb-beeline');
 
-
 export interface StaticErrorHandlerConfiguration {
     useSentry: boolean;
     errorTags?: {
@@ -33,12 +32,15 @@ export class StaticErrorHandlerService {
         this.configuration = configuration;
     }
 
-    static captureBreadcrumb(breadcrumb: Breadcrum | Sentry.Breadcrumb, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
+    static captureBreadcrumb(
+        breadcrumb: Breadcrum | Sentry.Breadcrumb,
+        logger?: Logger,
+        configuration: StaticErrorHandlerConfiguration = this.configuration
+    ) {
         if (process.env.DEPLOYMENT) {
             if (configuration.useSentry) {
                 Sentry.addBreadcrumb(breadcrumb);
-            }
-            else {
+            } else {
                 Raven.captureBreadcrumb(breadcrumb);
             }
         }
@@ -46,10 +48,15 @@ export class StaticErrorHandlerService {
         (logger || this.logger).info(breadcrumb.message, breadcrumb.data ? breadcrumb.data : '');
     }
 
-    static captureException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration) {
+    static captureException(
+        errorOrException: Error | typeof TryCatchEmitter.baseErrorClass,
+        logger?: Logger,
+        configuration: StaticErrorHandlerConfiguration = this.configuration
+    ) {
         // extract error from exception if exception passed in
         let { error, tags = {} } = this.parseException(errorOrException);
-        const {errorTags = {}} = configuration;
+        const { errorTags = {} } = configuration;
+        let sentryId: string | undefined;
         if (process.env.DEPLOYMENT && error) {
             if (!this.isAcceptableSize(error, RAVEN_DISPLAY_LIMIT)) {
                 this.captureMessage(
@@ -59,32 +66,33 @@ export class StaticErrorHandlerService {
             }
 
             if (configuration.useSentry) {
-                const sentryId =  Sentry.captureException(error, { tags: {
-                    ...this.getTraceTag(),
-                    ...errorTags,
-                    ...tags,
-                } });
+                sentryId = Sentry.captureException(error, {
+                    tags: {
+                        ...this.getTraceTag(),
+                        ...errorTags,
+                        ...tags
+                    }
+                });
 
                 this.addSentryContextToTrace(error, sentryId);
-                return sentryId;
             } else {
-                const sentryId = Raven.captureException(error, (e: any) => {
+                sentryId = Raven.captureException(error, (e: any) => {
                     if (e) {
                         this.logger.error(e);
                     }
                 });
 
                 this.addSentryContextToTrace(error, sentryId);
-                return sentryId;
             }
         } else if (!error) {
-            
             this.captureUndefinedException();
         }
 
         if (error) {
             (logger || this.logger).error(error);
         }
+
+        return sentryId;
     }
 
     /**
@@ -94,20 +102,23 @@ export class StaticErrorHandlerService {
         this.captureException(new Error('captureException was called and no error was provided'));
     }
 
-    static captureMessage(message: string, logger?: Logger, configuration: StaticErrorHandlerConfiguration = this.configuration, tags: {[key: string]: string} = {}) {
-        const {errorTags = {}} = configuration;
+    static captureMessage(
+        message: string,
+        logger?: Logger,
+        configuration: StaticErrorHandlerConfiguration = this.configuration,
+        tags: { [key: string]: string } = {}
+    ) {
+        const { errorTags = {} } = configuration;
         if (process.env.DEPLOYMENT) {
             if (configuration.useSentry) {
                 Sentry.captureMessage(message, {
                     tags: {
                         ...this.getTraceTag(),
                         ...errorTags,
-                        ...tags,
-                        
+                        ...tags
                     }
                 });
-            }
-            else {
+            } else {
                 Raven.captureMessage(message, (e: any) => {
                     if (e) {
                         this.logger.error(e);
@@ -125,13 +136,17 @@ export class StaticErrorHandlerService {
      */
     static catchError(error: any, exception: TryCatchException, options?: TryCatchOptions);
     static catchError(error: any, options: TryCatchOptions);
-    static catchError(error: any, optionsOrException = {} as TryCatchOptions | TryCatchException, options = {} as TryCatchOptions) {
+    static catchError(
+        error: any,
+        optionsOrException = {} as TryCatchOptions | TryCatchException,
+        options = {} as TryCatchOptions
+    ) {
         catchErrorUtil(error, optionsOrException, options);
     }
 
     private static parseException(errorOrException: Error | typeof TryCatchEmitter.baseErrorClass) {
         let error: Error;
-        let tags: { [key: string]: any } ;
+        let tags: { [key: string]: any };
 
         if (TryCatchEmitter.baseErrorClass && errorOrException instanceof TryCatchEmitter.baseErrorClass) {
             const exception = errorOrException;
@@ -143,12 +158,11 @@ export class StaticErrorHandlerService {
                 error = exception;
             }
             tags = exception.tags;
-        }
-        else {
+        } else {
             error = errorOrException;
             tags = errorOrException?.tags;
         }
-        
+
         return { error, tags: tags ?? {} };
     }
 
@@ -168,7 +182,7 @@ export class StaticErrorHandlerService {
                 bytes += 8;
             } else if (typeof value === 'object' && value !== null) {
                 objectList.push(value);
-                Object.getOwnPropertyNames(value).forEach(key => stack.push(value[key]));
+                Object.getOwnPropertyNames(value).forEach((key) => stack.push(value[key]));
             }
         }
         return bytes < acceptableSizeInBytes;
@@ -179,8 +193,8 @@ export class StaticErrorHandlerService {
      * is left
      */
     static sanitizeUnacceptablyLargeError(object: any) {
-        // get a list of all keys except the message and the stack 
-        const keys = Object.keys(object).filter(key => !['message', 'stack'].includes(key));
+        // get a list of all keys except the message and the stack
+        const keys = Object.keys(object).filter((key) => !['message', 'stack'].includes(key));
 
         // remove all other keys
         keys.forEach((key) => {
@@ -201,7 +215,7 @@ export class StaticErrorHandlerService {
             if (traceContext && traceContext.id) {
                 return {
                     traceId: traceContext.id
-                }
+                };
             }
         }
         return {};
